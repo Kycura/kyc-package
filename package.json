@@ -51,6 +51,7 @@
     "compressorjs": "^1.1.1",
     "deepmerge": "^4.3.0",
     "dotenv": "^16.0.3",
+    "face-api.js": "^0.22.2",
     "jslib-html5-camera-photo": "^3.3.3"
   }
 }

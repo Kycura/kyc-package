@@ -22,6 +22,11 @@
   import { preloadNextStepByCurrent } from '../services/preload-service';
   import { ActionNames, sendButtonClickEvent, VerificationStatuses } from '../utils/event-service';
   import { getLayoutStyles, getStepConfiguration } from '../ui-packs';
+  import {
+    loadFaceDetectionModels,
+    createFaceDetectionLoop,
+    type FaceDetectionResult,
+  } from '../services/face-detection';
 
   let video: HTMLVideoElement;
   let cameraPhoto: CameraPhoto | undefined = undefined;
@@ -37,6 +42,58 @@
   const facingMode = isMobile() ? FACING_MODES.USER : FACING_MODES.ENVIRONMENT;
   let stream: MediaStream;
 
+  // Face detection state
+  let faceDetected = false;
+  let faceCentered = false;
+  let faceFrontal = false;
+  let stableFrames = 0;
+  let countdown = 0;
+  let stopDetectionLoop: (() => void) | null = null;
+  let modelsReady = false;
+  let isCapturing = false;
+
+  // Auto-capture settings
+  const REQUIRED_STABLE_FRAMES = 20; // 20 frames at 250ms = 5 seconds
+  const COUNTDOWN_START = 5;
+
+  // All conditions must be met for a valid selfie
+  $: faceReady = faceDetected && faceCentered && faceFrontal;
+
+  const handleFaceDetectionResult = (result: FaceDetectionResult) => {
+    if (isCapturing) return;
+
+    faceDetected = result.detected;
+    faceCentered = result.centered;
+    faceFrontal = result.frontal;
+
+    if (faceReady) {
+      stableFrames++;
+
+      // Start countdown when we're close to capturing
+      if (stableFrames >= REQUIRED_STABLE_FRAMES - COUNTDOWN_START && stableFrames < REQUIRED_STABLE_FRAMES) {
+        countdown = REQUIRED_STABLE_FRAMES - stableFrames;
+      }
+
+      // Auto-capture when stable for long enough
+      if (stableFrames >= REQUIRED_STABLE_FRAMES) {
+        countdown = 0;
+        handleTakePhoto();
+      }
+    } else {
+      stableFrames = 0;
+      countdown = 0;
+    }
+  };
+
+  const initFaceDetection = async () => {
+    const loaded = await loadFaceDetectionModels();
+    modelsReady = loaded;
+
+    if (loaded && video) {
+      stopDetectionLoop = createFaceDetectionLoop(video, handleFaceDetectionResult, 250);
+    }
+  };
+
   onMount(() => {
     if (!video) return;
     cameraPhoto = new CameraPhoto(video);
@@ -49,6 +106,9 @@
         console.log('stream', cameraStream);
         stream = cameraStream;
         toggleOffIsDisabled();
+
+        // Initialize face detection after camera is ready
+        initFaceDetection();
       })
       .catch(error => {
         console.log('error', error);
@@ -57,10 +117,21 @@
 
   onDestroy(() => {
     cameraPhoto?.stopCamera();
+    if (stopDetectionLoop) {
+      stopDetectionLoop();
+    }
   });
 
   const handleTakePhoto = () => {
-    if (!cameraPhoto || $isDisabled) return;
+    if (!cameraPhoto || $isDisabled || isCapturing) return;
+
+    isCapturing = true;
+
+    // Stop face detection loop
+    if (stopDetectionLoop) {
+      stopDetectionLoop();
+      stopDetectionLoop = null;
+    }
 
     $selfieUri = cameraPhoto.getDataUri(
       $configuration.settings?.selfieCameraSettings as CaptureConfigOption,
@@ -69,6 +140,16 @@
     goToNextStep(currentStepId, $configuration, $currentStepId);
     toggleOnIsDisabled();
   };
+
+  // Get status message for the user
+  $: statusMessage = (() => {
+    if (!modelsReady) return '';
+    if (countdown > 0) return countdown.toString();
+    if (!faceDetected) return 'Position your face in the circle';
+    if (!faceFrontal) return 'Look straight at the camera';
+    if (!faceCentered) return 'Center your face';
+    return 'Hold still...';
+  })();
 
   preloadNextStepByCurrent($configuration, configuration, $currentStepId);
 </script>
@@ -118,7 +199,22 @@
       {/if}
     {/each}
   </div>
-  <Overlay type={DocumentType.SELFIE} />
+  <Overlay type={DocumentType.SELFIE} detected={faceReady} />
+
+  <!-- Face detection status indicator -->
+  {#if modelsReady && stream !== undefined}
+    <div
+      class="face-status"
+      class:detected={faceDetected}
+      class:frontal={faceFrontal}
+      class:centered={faceCentered}
+      class:ready={faceReady}
+      class:countdown={countdown > 0}
+    >
+      {statusMessage}
+    </div>
+  {/if}
+
   {#each step.elements as element}
     {#if element.type === Elements.CameraButton}
       <CameraButton
@@ -148,5 +244,51 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Face detection status indicator */
+  .face-status {
+    z-index: 10;
+    padding: 10px 20px;
+    border-radius: 24px;
+    background: rgba(255, 100, 100, 0.85);
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin-top: 12px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Face detected but not frontal */
+  .face-status.detected {
+    background: rgba(255, 150, 80, 0.85);
+  }
+
+  /* Face detected and frontal but not centered */
+  .face-status.detected.frontal {
+    background: rgba(250, 180, 80, 0.85);
+  }
+
+  /* All conditions met - ready for capture */
+  .face-status.ready {
+    background: rgba(74, 222, 128, 0.85);
+  }
+
+  .face-status.countdown {
+    font-size: 32px;
+    font-weight: 700;
+    padding: 16px 32px;
+    background: rgba(74, 222, 128, 0.95);
+    animation: pulse 0.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(1.1);
+    }
   }
 </style>

@@ -3,12 +3,13 @@
   import { TDocumentType } from '../../contexts/app-state/types';
 
   export let type: TDocumentType;
+  export let detected: boolean = false;
 
   const overlayType = getOverlayDocumentType(type);
 </script>
 
 <div class="overlay-container">
-  <div class="overlay {overlayType}" />
+  <div class="overlay {overlayType}" class:detected />
 </div>
 
 <style>
@@ -29,6 +30,11 @@
     box-shadow: 0px 0px 0px 1000px rgba(0, 0, 0, 0.7);
     border: 3px solid #ffffff4d;
     width: 100%;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .overlay.detected {
+    border-color: #4ade80;
+    box-shadow: 0px 0px 0px 1000px rgba(0, 0, 0, 0.7), 0 0 20px rgba(74, 222, 128, 0.4);
   }
   .overlay.card {
     border-radius: 12px;
