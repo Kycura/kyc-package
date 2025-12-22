@@ -46,6 +46,7 @@
   let faceDetected = false;
   let faceCentered = false;
   let faceFrontal = false;
+  let faceProperSize = false;
   let stableFrames = 0;
   let countdown = 0;
   let stopDetectionLoop: (() => void) | null = null;
@@ -57,7 +58,7 @@
   const COUNTDOWN_START = 5;
 
   // All conditions must be met for a valid selfie
-  $: faceReady = faceDetected && faceCentered && faceFrontal;
+  $: faceReady = faceDetected && faceCentered && faceFrontal && faceProperSize;
 
   const handleFaceDetectionResult = (result: FaceDetectionResult) => {
     if (isCapturing) return;
@@ -65,6 +66,7 @@
     faceDetected = result.detected;
     faceCentered = result.centered;
     faceFrontal = result.frontal;
+    faceProperSize = result.properSize;
 
     if (faceReady) {
       stableFrames++;
@@ -147,7 +149,8 @@
     if (countdown > 0) return countdown.toString();
     if (!faceDetected) return 'Position your face in the circle';
     if (!faceFrontal) return 'Look straight at the camera';
-    if (!faceCentered) return 'Center your face';
+    if (!faceProperSize) return 'Move closer or further';
+    if (!faceCentered) return 'Center your face in the circle';
     return 'Hold still...';
   })();
 
@@ -207,6 +210,7 @@
       class="face-status"
       class:detected={faceDetected}
       class:frontal={faceFrontal}
+      class:properSize={faceProperSize}
       class:centered={faceCentered}
       class:ready={faceReady}
       class:countdown={countdown > 0}
@@ -265,9 +269,14 @@
     background: rgba(255, 150, 80, 0.85);
   }
 
-  /* Face detected and frontal but not centered */
+  /* Face detected and frontal */
   .face-status.detected.frontal {
-    background: rgba(250, 180, 80, 0.85);
+    background: rgba(255, 180, 80, 0.85);
+  }
+
+  /* Face detected, frontal, and proper size */
+  .face-status.detected.frontal.properSize {
+    background: rgba(250, 200, 80, 0.85);
   }
 
   /* All conditions met - ready for capture */

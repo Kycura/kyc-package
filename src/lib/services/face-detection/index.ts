@@ -4,6 +4,7 @@ export interface FaceDetectionResult {
   detected: boolean;
   centered: boolean;
   frontal: boolean;
+  properSize: boolean;
   box: {
     x: number;
     y: number;
@@ -85,7 +86,6 @@ const isFaceFrontal = (landmarks: faceapi.FaceLandmarks68, tolerance = 0.15): bo
   };
 
   const noseTip = positions[30];
-  const noseTop = positions[27];
 
   // Calculate the midpoint between the eyes
   const eyeMidpointX = (leftEyeCenter.x + rightEyeCenter.x) / 2;
@@ -112,20 +112,20 @@ const isFaceFrontal = (landmarks: faceapi.FaceLandmarks68, tolerance = 0.15): bo
 };
 
 /**
- * Detect a face in the video element and check if it's centered and frontal.
+ * Detect a face in the video element and check if it's centered, frontal, and properly sized.
  * @param video - The video element to analyze
- * @param centerTolerance - How close to center the face must be (0-1, default 0.2 = 20%)
+ * @param centerTolerance - How close to center the face must be (0-1, default 0.08 = 8%)
  */
 export const detectFace = async (
   video: HTMLVideoElement,
-  centerTolerance = 0.2,
+  centerTolerance = 0.08,
 ): Promise<FaceDetectionResult> => {
   if (!modelsLoaded) {
-    return { detected: false, centered: false, frontal: false, box: null };
+    return { detected: false, centered: false, frontal: false, properSize: false, box: null };
   }
 
   if (video.readyState !== 4) {
-    return { detected: false, centered: false, frontal: false, box: null };
+    return { detected: false, centered: false, frontal: false, properSize: false, box: null };
   }
 
   try {
@@ -140,33 +140,46 @@ export const detectFace = async (
       .withFaceLandmarks(true); // Use tiny landmarks model
 
     if (!detection) {
-      return { detected: false, centered: false, frontal: false, box: null };
+      return { detected: false, centered: false, frontal: false, properSize: false, box: null };
     }
 
     const { x, y, width, height } = detection.detection.box;
     const box = { x, y, width, height };
 
-    // Calculate if face is centered
     const videoWidth = video.videoWidth;
     const videoHeight = video.videoHeight;
 
+    // Calculate the overlay circle dimensions
+    // The overlay is 80% width with aspect-ratio 3/4, centered in the video
+    const overlayWidth = videoWidth * 0.8;
+    const overlayHeight = overlayWidth * (4 / 3); // aspect-ratio 3/4 means height = width * 4/3
+    const overlayCenterX = videoWidth / 2;
+    const overlayCenterY = videoHeight / 2;
+
+    // Calculate face center
     const faceCenterX = x + width / 2;
     const faceCenterY = y + height / 2;
-    const videoCenterX = videoWidth / 2;
-    const videoCenterY = videoHeight / 2;
 
-    const xOk = Math.abs(faceCenterX - videoCenterX) < videoWidth * centerTolerance;
-    const yOk = Math.abs(faceCenterY - videoCenterY) < videoHeight * centerTolerance;
-
-    const centered = xOk && yOk;
+    // Check if face center is within the overlay circle
+    // Use tighter tolerance for precise positioning
+    const xOffset = Math.abs(faceCenterX - overlayCenterX) / overlayWidth;
+    const yOffset = Math.abs(faceCenterY - overlayCenterY) / overlayHeight;
+    const centered = xOffset < centerTolerance && yOffset < centerTolerance;
 
     // Check if face is frontal (looking at camera)
     const frontal = isFaceFrontal(detection.landmarks);
 
-    return { detected: true, centered, frontal, box };
+    // Check if face size is appropriate for the overlay
+    // Face should fill approximately 40-85% of the overlay width
+    const faceToOverlayRatio = width / overlayWidth;
+    const minRatio = 0.35;
+    const maxRatio = 0.85;
+    const properSize = faceToOverlayRatio >= minRatio && faceToOverlayRatio <= maxRatio;
+
+    return { detected: true, centered, frontal, properSize, box };
   } catch (error) {
     console.warn('Face detection error:', error);
-    return { detected: false, centered: false, frontal: false, box: null };
+    return { detected: false, centered: false, frontal: false, properSize: false, box: null };
   }
 };
 
