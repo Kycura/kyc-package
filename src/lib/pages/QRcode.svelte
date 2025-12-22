@@ -18,8 +18,8 @@
 
   const stepNamespace = step.namespace!;
 
-  // Get QR code image URL from step configuration
-  const qrCodeImageUrl = step.qrCodeUrl || '';
+  // Get the URL to encode in the QR code from step configuration
+  const qrCodeUrl = step.qrCodeUrl || '';
 
   preloadNextStepByCurrent($configuration, configuration, stepId);
 </script>
@@ -61,7 +61,7 @@
       {/if}
       {#if element.type === Elements.QRcode}
         <div class="qrcode-wrapper">
-          <QRcode configuration={element.props} url={qrCodeImageUrl} />
+          <QRcode configuration={element.props} url={qrCodeUrl} />
         </div>
       {/if}
     {/each}

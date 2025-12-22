@@ -4,7 +4,6 @@
   import { configuration } from '../contexts/configuration';
   import { onDestroy, onMount } from 'svelte';
   import {
-    CameraButton,
     IconButton,
     IconCloseButton,
     Loader,
@@ -54,8 +53,10 @@
   let isCapturing = false;
 
   // Auto-capture settings
-  const REQUIRED_STABLE_FRAMES = 20; // 20 frames at 250ms = 5 seconds
-  const COUNTDOWN_START = 5;
+  const DETECTION_INTERVAL_MS = 250;
+  const COUNTDOWN_SECONDS = 5;
+  const FRAMES_PER_SECOND = 1000 / DETECTION_INTERVAL_MS; // 4 frames per second
+  const REQUIRED_STABLE_FRAMES = COUNTDOWN_SECONDS * FRAMES_PER_SECOND; // 20 frames = 5 seconds
 
   // All conditions must be met for a valid selfie
   $: faceReady = faceDetected && faceCentered && faceFrontal && faceProperSize;
@@ -71,10 +72,10 @@
     if (faceReady) {
       stableFrames++;
 
-      // Start countdown when we're close to capturing
-      if (stableFrames >= REQUIRED_STABLE_FRAMES - COUNTDOWN_START && stableFrames < REQUIRED_STABLE_FRAMES) {
-        countdown = REQUIRED_STABLE_FRAMES - stableFrames;
-      }
+      // Calculate countdown in actual seconds remaining
+      const framesRemaining = REQUIRED_STABLE_FRAMES - stableFrames;
+      const secondsRemaining = Math.ceil(framesRemaining / FRAMES_PER_SECOND);
+      countdown = secondsRemaining;
 
       // Auto-capture when stable for long enough
       if (stableFrames >= REQUIRED_STABLE_FRAMES) {
@@ -146,11 +147,12 @@
   // Get status message for the user
   $: statusMessage = (() => {
     if (!modelsReady) return '';
-    if (countdown > 0) return countdown.toString();
     if (!faceDetected) return 'Position your face in the circle';
     if (!faceFrontal) return 'Look straight at the camera';
     if (!faceProperSize) return 'Move closer or further';
     if (!faceCentered) return 'Center your face in the circle';
+    // Show countdown when < 5 seconds remaining (after initial "Hold still...")
+    if (countdown > 0 && countdown < COUNTDOWN_SECONDS) return countdown.toString();
     return 'Hold still...';
   })();
 
@@ -213,21 +215,12 @@
       class:properSize={faceProperSize}
       class:centered={faceCentered}
       class:ready={faceReady}
-      class:countdown={countdown > 0}
+      class:countdown={countdown > 0 && countdown < COUNTDOWN_SECONDS}
     >
       {statusMessage}
     </div>
   {/if}
 
-  {#each step.elements as element}
-    {#if element.type === Elements.CameraButton}
-      <CameraButton
-        on:click={handleTakePhoto}
-        configuration={element.props}
-        isDisabled={$isDisabled}
-      />
-    {/if}
-  {/each}
 </div>
 
 <style>

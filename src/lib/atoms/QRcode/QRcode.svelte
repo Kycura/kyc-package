@@ -1,42 +1,72 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import QRCodeLib from 'qrcode';
   import type { IElementProps } from '../../contexts/configuration/types';
 
   export let configuration: IElementProps;
   export let url: string;
 
-  let imageLoaded = false;
-  let imageError = false;
+  let canvas: HTMLCanvasElement;
+  let isLoading = true;
+  let hasError = false;
 
-  const handleImageLoad = () => {
-    imageLoaded = true;
-  };
+  const width = parseInt(configuration.style?.width as string) || 200;
+  const height = parseInt(configuration.style?.height as string) || 200;
 
-  const handleImageError = () => {
-    imageError = true;
-  };
+  onMount(() => {
+    if (url && canvas) {
+      generateQRCode();
+    }
+  });
+
+  $: if (url && canvas) {
+    generateQRCode();
+  }
+
+  async function generateQRCode() {
+    if (!url || !canvas) return;
+    
+    isLoading = true;
+    hasError = false;
+    
+    try {
+      await QRCodeLib.toCanvas(canvas, url, {
+        width: width,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      });
+      isLoading = false;
+    } catch (err) {
+      console.error('Failed to generate QR code:', err);
+      hasError = true;
+      isLoading = false;
+    }
+  }
 </script>
 
-<div class="qrcode-container" style="display: flex; justify-content: center; align-items: center;">
-  {#if url && !imageError}
-    <img 
-      src={url} 
-      alt="QR Code" 
-      on:load={handleImageLoad}
-      on:error={handleImageError}
-      style="
-        width: {configuration.style?.width || '200px'};
-        height: {configuration.style?.height || '200px'};
-        {configuration.style ? Object.entries(configuration.style).map(([key, value]) => `${key}: ${value}`).join('; ') : ''}
-      "
-    />
-  {:else if imageError}
-    <div class="error" style="width: {configuration.style?.width || '200px'}; height: {configuration.style?.height || '200px'}; display: flex; justify-content: center; align-items: center;">
-      Failed to load QR code
+<div class="qrcode-container">
+  {#if hasError}
+    <div class="error" style="width: {width}px; height: {height}px;">
+      Failed to generate QR code
+    </div>
+  {:else if !url}
+    <div class="error" style="width: {width}px; height: {height}px;">
+      No URL provided
     </div>
   {:else}
-    <div class="loading" style="width: {configuration.style?.width || '200px'}; height: {configuration.style?.height || '200px'}; display: flex; justify-content: center; align-items: center;">
-      Loading QR code...
-    </div>
+    <canvas 
+      bind:this={canvas}
+      class:loading={isLoading}
+      style="width: {width}px; height: {height}px;"
+    />
+    {#if isLoading}
+      <div class="loading-overlay" style="width: {width}px; height: {height}px;">
+        Generating QR code...
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -46,9 +76,22 @@
     justify-content: center;
     align-items: center;
     padding: 1rem;
+    position: relative;
   }
 
-  .loading {
+  canvas {
+    border-radius: 8px;
+  }
+
+  canvas.loading {
+    opacity: 0;
+  }
+
+  .loading-overlay {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     border: 2px dashed #ccc;
     border-radius: 8px;
     color: #666;
@@ -56,10 +99,13 @@
   }
 
   .error {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     border: 2px dashed #ff6b6b;
     border-radius: 8px;
     color: #ff6b6b;
     font-size: 14px;
     text-align: center;
   }
-</style> 
+</style>

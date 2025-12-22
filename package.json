@@ -36,6 +36,7 @@
     "@types/jslib-html5-camera-photo": "^3.1.2",
     "@types/lodash.keyby": "^4.6.7",
     "@types/node": "^18.11.9",
+    "@types/qrcode": "^1.5.5",
     "postcss": "^8.4.31",
     "rollup-plugin-visualizer": "^5.8.3",
     "svelte": "^3.39.0",
@@ -52,6 +53,7 @@
     "deepmerge": "^4.3.0",
     "dotenv": "^16.0.3",
     "face-api.js": "^0.22.2",
-    "jslib-html5-camera-photo": "^3.3.3"
+    "jslib-html5-camera-photo": "^3.3.3",
+    "qrcode": "^1.5.4"
   }
 }
