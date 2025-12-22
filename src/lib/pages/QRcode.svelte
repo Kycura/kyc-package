@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { T } from '../contexts/translation';
   import { IconButton, IconCloseButton, Image, NextStepButton, Paragraph, Title, QRcode } from '../atoms';
   import { configuration } from '../contexts/configuration';
   import { Elements } from '../contexts/configuration/types';
-  import { goToPrevStep } from '../contexts/navigation';
+  import { goToPrevStep, goToNextStep } from '../contexts/navigation';
   import { appState, currentStepId } from '../contexts/app-state';
   import { ActionNames, sendButtonClickEvent, VerificationStatuses } from '../utils/event-service';
   import { getLayoutStyles, getStepConfiguration } from '../ui-packs';
@@ -20,6 +21,19 @@
 
   // Get the URL to encode in the QR code from step configuration
   const qrCodeUrl = step.qrCodeUrl || '';
+
+  // Check if user is on a mobile device
+  const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      (window.innerWidth <= 768);
+  };
+
+  // On mobile, skip QR code step and go directly to the next step
+  onMount(() => {
+    if (isMobile()) {
+      goToNextStep(currentStepId, $configuration, stepId);
+    }
+  });
 
   preloadNextStepByCurrent($configuration, configuration, stepId);
 </script>
