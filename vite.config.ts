@@ -31,9 +31,7 @@ export default ({ mode }: { mode: UserConfig['mode'] }) => {
       svelte({ emitCss: false }),
       dts({
         insertTypesEntry: true,
-      }),
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      visualizer(),
+      }), 
     ],
     define: {
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
