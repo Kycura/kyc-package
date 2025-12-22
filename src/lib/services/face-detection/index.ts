@@ -67,7 +67,7 @@ export const areModelsLoaded = (): boolean => modelsLoaded;
  * Check if the face is frontal (looking at camera) based on landmark positions.
  * Analyzes the symmetry of facial features to determine if face is turned.
  */
-const isFaceFrontal = (landmarks: faceapi.FaceLandmarks68, tolerance = 0.15): boolean => {
+const isFaceFrontal = (landmarks: faceapi.FaceLandmarks68, tolerance = 0.25): boolean => {
   const positions = landmarks.positions;
 
   // Get key landmark points
@@ -114,11 +114,11 @@ const isFaceFrontal = (landmarks: faceapi.FaceLandmarks68, tolerance = 0.15): bo
 /**
  * Detect a face in the video element and check if it's centered, frontal, and properly sized.
  * @param video - The video element to analyze
- * @param centerTolerance - How close to center the face must be (0-1, default 0.08 = 8%)
+ * @param centerTolerance - How close to center the face must be (0-1, default 0.15 = 15%)
  */
 export const detectFace = async (
   video: HTMLVideoElement,
-  centerTolerance = 0.08,
+  centerTolerance = 0.15,
 ): Promise<FaceDetectionResult> => {
   if (!modelsLoaded) {
     return { detected: false, centered: false, frontal: false, properSize: false, box: null };
@@ -170,10 +170,10 @@ export const detectFace = async (
     const frontal = isFaceFrontal(detection.landmarks);
 
     // Check if face size is appropriate for the overlay
-    // Face should fill approximately 40-85% of the overlay width
+    // Face should fill approximately 25-95% of the overlay width (flexible range)
     const faceToOverlayRatio = width / overlayWidth;
-    const minRatio = 0.35;
-    const maxRatio = 0.85;
+    const minRatio = 0.25;
+    const maxRatio = 0.95;
     const properSize = faceToOverlayRatio >= minRatio && faceToOverlayRatio <= maxRatio;
 
     return { detected: true, centered, frontal, properSize, box };
