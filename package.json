@@ -5,12 +5,12 @@
     "url": "https://github.com/Kycura/kyc-package"
   },
   "description": "KYC ",
-  "keywords": [ 
+  "keywords": [
     "custom"
   ],
   "name": "@davidkalb/kyc-sdk",
   "private": false,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "files": [
     "dist"
