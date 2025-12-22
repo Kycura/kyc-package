@@ -2,15 +2,15 @@
   "author": "David Kalb <davidkalb@proton.me>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Kycura/kyc-sdk"
+    "url": "https://github.com/Kycura/kyc-package"
   },
   "description": "KYC ",
   "keywords": [ 
     "custom"
   ],
-  "name": "kyc-sdk",
+  "name": "@davidkalb/kyc-sdk",
   "private": false,
-  "version": "1.0.2",
+  "version": "1.0.1",
   "type": "module",
   "files": [
     "dist"
