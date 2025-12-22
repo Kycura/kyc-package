@@ -70,7 +70,7 @@
   <div class="button-wrapper">
     {#each step.elements as element}
       {#if element.type === Elements.Button}
-        <NextStepButton configuration={element.props}>
+        <NextStepButton configuration={element.props} skipType="">
           <T key="button" namespace={stepNamespace} />
         </NextStepButton>
       {/if}

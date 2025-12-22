@@ -23,7 +23,7 @@
   const style = getLayoutStyles($configuration, step);
 
   const stepNamespace = step.namespace!;
-
+  const isHidden = step.hidden;
   flowApproved();
 
   const handleClose = () => {
@@ -69,7 +69,7 @@
         <T key={element.props.context || 'description'} namespace={stepNamespace} />
       </Paragraph>
     {/if}
-    {#if element.type === Elements.Button}
+    {#if element.type === Elements.Button && !isHidden}
       <Button on:click={handleClose} configuration={element.props}>
         <T key="button" namespace={stepNamespace} />
       </Button>

@@ -99,6 +99,7 @@ export interface IElement {
   props: IElementProps;
   type: TElements;
   disabled?: boolean;
+  hidden?: boolean;
   orderIndex: number;
   elements?: IElement[];
 }
@@ -115,6 +116,7 @@ export interface IStepConfiguration {
   cameraConfig?: CaptureConfigOption;
   documentOptions?: { type: TDocumentType; kind: TDocumentKind }[];
   qrCodeUrl?: string;
+  hidden?: boolean;
 }
 
 export interface IOverlayStyles {
