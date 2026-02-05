@@ -21,6 +21,10 @@
   import { preloadNextStepByCurrent } from '../services/preload-service';
   import { getLayoutStyles, getStepConfiguration } from '../ui-packs';
   import { getDocumentType } from '../utils/documents-utils';
+  import {
+    createDocumentDetectionLoop,
+    type DocumentDetectionResult,
+  } from '../services/document-detection';
 
   export let stepId;
 
@@ -31,6 +35,14 @@
   const style = getLayoutStyles($configuration, step);
 
   const [isDisabled, , toggleOnIsDisabled, toggleOffIsDisabled] = createToggle(true);
+
+  // Document detection state
+  let documentDetectionResult: DocumentDetectionResult = {
+    detected: false,
+    corners: null,
+    confidence: false,
+  };
+  let stopDocumentDetection: (() => void) | undefined;
 
   const documentType = getDocumentType(step, $selectedDocumentInfo);
 
@@ -54,6 +66,15 @@
         console.log('stream', cameraStream);
         stream = cameraStream;
         toggleOffIsDisabled();
+
+        // Start document detection loop for real-time feedback
+        stopDocumentDetection = createDocumentDetectionLoop(
+          video,
+          result => {
+            documentDetectionResult = result;
+          },
+          500,
+        );
       })
       .catch(error => {
         console.log('error', error);
@@ -61,6 +82,7 @@
   });
 
   onDestroy(() => {
+    stopDocumentDetection?.();
     cameraPhoto?.stopCamera();
   });
 
@@ -116,12 +138,32 @@
   {#if documentType}
     <Overlay type={documentType} />
   {/if}
+
+  <!-- Document detection indicator -->
+  {#if stream !== undefined}
+    <div
+      class="detection-indicator"
+      class:detected={documentDetectionResult.detected && documentDetectionResult.confidence}
+    >
+      {#if documentDetectionResult.detected && documentDetectionResult.confidence}
+        <span class="indicator-icon">✓</span>
+        <span>Document detected</span>
+      {:else if documentDetectionResult.detected}
+        <span class="indicator-icon">↔</span>
+        <span>Move closer to document</span>
+      {:else}
+        <span class="indicator-icon">⋯</span>
+        <span>Position document in frame</span>
+      {/if}
+    </div>
+  {/if}
+
   {#each step.elements as element}
     {#if element.type === Elements.CameraButton}
       <CameraButton
         on:click={handleTakePhoto}
         configuration={element.props}
-        isDisabled={$isDisabled}
+        isDisabled={$isDisabled || !documentDetectionResult.detected}
       />
     {/if}
   {/each}
@@ -145,5 +187,31 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+  }
+
+  .detection-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 12px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+  }
+
+  .detection-indicator.detected {
+    background: rgba(72, 187, 120, 0.95);
+    color: white;
+  }
+
+  .indicator-icon {
+    font-size: 16px;
+    font-weight: bold;
   }
 </style>

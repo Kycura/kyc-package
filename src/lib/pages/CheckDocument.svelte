@@ -12,6 +12,7 @@
   import { getLayoutStyles, getStepConfiguration } from '../ui-packs';
   import { getFlowConfig } from '../contexts/flows/hooks';
   import { getDocumentType } from '../utils/documents-utils';
+  import { validateDocumentImage, type DocumentDetectionResult } from '../services/document-detection';
 
   export let stepId;
 
@@ -24,6 +25,10 @@
 
   let image = '';
   let skipBackSide = false;
+
+  // Document validation state
+  let isValidating = false;
+  let validationResult: DocumentDetectionResult | null = null;
 
   $: {
     if (!documentType) {
@@ -41,6 +46,15 @@
       $currentStepId,
       skipBackSide ? 'back-side' : undefined,
     );
+  }
+
+  // Validate the captured image for document presence
+  $: if (image && !validationResult && !isValidating) {
+    isValidating = true;
+    validateDocumentImage(image).then(result => {
+      validationResult = result;
+      isValidating = false;
+    });
   }
 </script>
 
@@ -82,6 +96,32 @@
       <Image configuration={element.props} />
     {/if}
   {/each}
+
+  <!-- Document validation feedback -->
+  {#if isValidating}
+    <div class="validation-message validating">
+      <span class="validation-icon">⏳</span>
+      <span>Checking document...</span>
+    </div>
+  {:else if validationResult}
+    {#if validationResult.detected && validationResult.confidence}
+      <div class="validation-message success">
+        <span class="validation-icon">✓</span>
+        <span>Document detected successfully</span>
+      </div>
+    {:else if validationResult.detected}
+      <div class="validation-message warning">
+        <span class="validation-icon">⚠</span>
+        <span>Document may be too small or unclear. Consider retaking.</span>
+      </div>
+    {:else}
+      <div class="validation-message error">
+        <span class="validation-icon">✕</span>
+        <span>No document detected. Please retake the photo.</span>
+      </div>
+    {/if}
+  {/if}
+
   <NavigationButtons {skipBackSide} />
 </div>
 
@@ -94,5 +134,44 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+  }
+
+  .validation-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 16px auto;
+    max-width: 320px;
+    transition: all 0.3s ease;
+  }
+
+  .validation-message.validating {
+    background: rgba(100, 100, 100, 0.1);
+    color: #666;
+  }
+
+  .validation-message.success {
+    background: rgba(72, 187, 120, 0.15);
+    color: #2f855a;
+  }
+
+  .validation-message.warning {
+    background: rgba(237, 137, 54, 0.15);
+    color: #c05621;
+  }
+
+  .validation-message.error {
+    background: rgba(245, 101, 101, 0.15);
+    color: #c53030;
+  }
+
+  .validation-icon {
+    font-size: 16px;
+    font-weight: bold;
   }
 </style>

@@ -54,6 +54,7 @@
     "dotenv": "^16.0.3",
     "face-api.js": "^0.22.2",
     "jslib-html5-camera-photo": "^3.3.3",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "scanic": "^0.1.8"
   }
 }

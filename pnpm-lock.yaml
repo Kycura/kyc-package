@@ -32,6 +32,9 @@ importers:
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
+      scanic:
+        specifier: ^0.1.8
+        version: 0.1.8
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: 1.0.8
@@ -1055,6 +1058,9 @@ packages:
     resolution: {integrity: sha512-uf6HoO8fy6ClsrShvMgaKUn14f2EHQLQRtpsZZLeU/Mv0Q1K5P0+x2uvH6Cub39TVVbWNSrraUhDAoFph6vh0A==}
     engines: {node: '>=14.0.0'}
     hasBin: true
+
+  scanic@0.1.8:
+    resolution: {integrity: sha512-ggOtVefHItUBAKI1b2yDrT33rKDfFblICXGvbkfC/D9ldX9qD4iAu1HD6Mx70ViwnrXVXAsFpSfqnPXFeHKK4A==}
 
   seedrandom@2.4.3:
     resolution: {integrity: sha512-2CkZ9Wn2dS4mMUWQaXLsOAfGD+irMlLEeSP3cMxpGbgyOOzJGFa+MWCOMTOCMyZinHRPxyOj/S/C57li/1to6Q==}
@@ -2184,6 +2190,8 @@ snapshots:
       source-map-js: 1.2.1
     optionalDependencies:
       '@parcel/watcher': 2.5.1
+
+  scanic@0.1.8: {}
 
   seedrandom@2.4.3: {}
 
